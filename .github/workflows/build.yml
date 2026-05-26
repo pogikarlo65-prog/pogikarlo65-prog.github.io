@@ -1,9 +1,11 @@
+```yaml
 name: Build Android APK
- 
+
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -66,14 +68,15 @@ jobs:
           sudo apt-get install -y imagemagick
           for size in 48 72 96 144 192; do
             case $size in
-              48)  folder="mipmap-mdpi"  ;;
-              72)  folder="mipmap-hdpi"  ;;
-              96)  folder="mipmap-xhdpi" ;;
-              144) folder="mipmap-xxhdpi" ;;
-              192) folder="mipmap-xxxhdpi" ;;
+              48)  folder="mipmap-mdpi"    foreground=108 ;;
+              72)  folder="mipmap-hdpi"    foreground=162 ;;
+              96)  folder="mipmap-xhdpi"   foreground=216 ;;
+              144) folder="mipmap-xxhdpi"  foreground=324 ;;
+              192) folder="mipmap-xxxhdpi" foreground=432 ;;
             esac
             convert logo.png -resize ${size}x${size} android/app/src/main/res/${folder}/ic_launcher.png
             convert logo.png -resize ${size}x${size} android/app/src/main/res/${folder}/ic_launcher_round.png
+            convert logo.png -resize ${foreground}x${foreground} android/app/src/main/res/${folder}/ic_launcher_foreground.png
           done
 
       - name: Upgrade Gradle wrapper to 8.3
@@ -96,3 +99,4 @@ jobs:
         with:
           name: northbank-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+```

@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Northbank Reserve Archives</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&amp;family=Crimson+Text:ital,wght@0,400;0,600;1,400&amp;display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --c-black:    #020101;
+      --c-void:     #030301;
+      --c-deep:     #080706;
+      --c-dark:     #161515;
+      --c-panel:    #323233;
+      --c-mid:      #3D3B36;
+      --c-stone:    #484746;
+      --c-muted:    #5D5C5A;
+      --c-silver:   #B3B2B1;
+      --c-light:    #DADADC;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(180,180,180,0.04) 0%, transparent 50%),
+        linear-gradient(180deg, var(--c-void) 0%, var(--c-black) 60%, var(--c-void) 100%);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 48px 16px;
+      overflow-x: hidden;
+      color: var(--c-silver);
+      font-family: 'Crimson Text', Georgia, serif;
+    }
+
+    .glow {
+      position: fixed; border-radius: 50%; pointer-events: none;
+      filter: blur(130px); opacity: 1;
+    }
+    .glow-1 {
+      width: 420px; height: 420px;
+      background: rgba(93, 92, 90, 0.06);
+      top: -120px; left: -120px;
+      animation: drift 14s ease-in-out infinite;
+    }
+    .glow-2 {
+      width: 360px; height: 360px;
+      background: rgba(61, 59, 54, 0.05);
+      bottom: -100px; right: -100px;
+      animation: drift 18s ease-in-out infinite reverse;
+    }
+    @keyframes drift {
+      0%,100% { transform: translate(0,0); }
+      50% { transform: translate(12px, 18px); }
+    }
+
+    .vault {
+      position: relative; width: 100%; max-width: 420px;
+      padding: 36px 32px 28px;
+      background: linear-gradient(160deg, var(--c-dark) 0%, var(--c-deep) 100%);
+      border: 1px solid var(--c-stone);
+      box-shadow:
+        0 0 0 1px var(--c-black),
+        0 4px 60px rgba(2,1,1,0.9),
+        inset 0 1px 0 rgba(218,218,220,0.06),
+        inset 0 -1px 0 rgba(2,1,1,0.5);
+      z-index: 10;
+    }
+
+    /* Corner brackets */
+    .vault::before, .vault::after {
+      content: ''; position: absolute;
+      width: 16px; height: 16px;
+      border-color: var(--c-muted);
+      border-style: solid;
+    }
+    .vault::before { top: 7px; left: 7px; border-width: 1px 0 0 1px; }
+    .vault::after  { bottom: 7px; right: 7px; border-width: 0 1px 1px 0; }
+
+    /* Top ornament row */
+    .ornament {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 8px;
+    }
+    .ornament::before, .ornament::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--c-stone), transparent);
+    }
+    .ornament span {
+      font-size: 0.65rem; letter-spacing: 4px;
+      color: var(--c-muted); font-family: 'Cinzel', serif;
+    }
+
+    .title {
+      text-align: center;
+      font-family: 'Cinzel', serif;
+      font-size: 1.35rem; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--c-light);
+      margin-bottom: 3px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-style: italic; font-size: 0.88rem;
+      color: var(--c-muted); margin-bottom: 24px; letter-spacing: 1px;
+    }
+
+    .divider {
+      display: flex; align-items: center; gap: 8px;
+      margin: 20px 0;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--c-panel), transparent);
+    }
+    .divider-diamond {
+      width: 4px; height: 4px;
+      background: var(--c-stone); transform: rotate(45deg); flex-shrink: 0;
+    }
+
+    .section { margin-bottom: 16px; }
+
+    label {
+      display: block; margin-bottom: 6px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.68rem; letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--c-muted);
+    }
+
+    input {
+      width: 100%; padding: 12px 14px;
+      border: 1px solid var(--c-panel);
+      background: rgba(2,1,1,0.5);
+      color: var(--c-light);
+      outline: none; transition: 0.2s ease;
+      font-family: 'Crimson Text', serif; font-size: 1rem;
+    }
+    input::placeholder { color: var(--c-stone); }
+    input:focus {
+      border-color: var(--c-muted);
+      background: rgba(2,1,1,0.65);
+      box-shadow: 0 0 0 1px rgba(93,92,90,0.2), inset 0 1px 3px rgba(0,0,0,0.4);
+    }
+
+    .save-btn {
+      width: 100%; margin-top: 6px; padding: 13px;
+      border: 1px solid var(--c-stone);
+      background: linear-gradient(160deg, var(--c-panel), var(--c-mid));
+      color: var(--c-light);
+      font-family: 'Cinzel', serif; font-size: 0.78rem;
+      font-weight: 600; letter-spacing: 3px; text-transform: uppercase;
+      cursor: pointer; transition: 0.2s ease;
+      box-shadow: inset 0 1px 0 rgba(218,218,220,0.05);
+    }
+    .save-btn:hover {
+      background: linear-gradient(160deg, var(--c-stone), var(--c-panel));
+      border-color: var(--c-silver);
+      color: var(--c-light);
+    }
+
+    .transfer-label {
+      font-family: 'Cinzel', serif;
+      font-size: 0.63rem; letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--c-muted); margin-bottom: 10px;
+    }
+
+    .transfer-row { display: flex; gap: 8px; margin-bottom: 8px; }
+
+    .transfer-btn {
+      flex: 1; padding: 11px 8px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.68rem; letter-spacing: 1.5px; text-transform: uppercase;
+      font-weight: 600; cursor: pointer; transition: 0.2s ease;
+      background: rgba(2,1,1,0.4);
+      color: var(--c-silver);
+      border: 1px solid var(--c-panel);
+    }
+    .transfer-btn:hover {
+      background: var(--c-panel);
+      border-color: var(--c-muted);
+      color: var(--c-light);
+    }
+
+    .zip-btn {
+      width: 100%; padding: 11px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.68rem; letter-spacing: 1.5px; text-transform: uppercase;
+      font-weight: 600; cursor: pointer; transition: 0.2s ease;
+      background: rgba(2,1,1,0.3);
+      color: var(--c-muted);
+      border: 1px solid var(--c-mid);
+    }
+    .zip-btn:hover {
+      background: var(--c-mid);
+      border-color: var(--c-stone);
+      color: var(--c-silver);
+    }
+
+    #importFileInput { display: none; }
+
+    .saved h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 0.72rem; letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--c-muted); margin-bottom: 12px;
+    }
+
+    .entry {
+      margin-bottom: 10px; padding: 13px 14px;
+      background: rgba(2,1,1,0.35);
+      border: 1px solid var(--c-panel);
+      border-left: 2px solid var(--c-muted);
+      transition: 0.2s ease;
+    }
+    .entry:hover { background: rgba(50,50,51,0.25); border-color: var(--c-stone); }
+
+    .entry-site {
+      font-family: 'Cinzel', serif; font-size: 0.85rem;
+      color: var(--c-light); margin-bottom: 5px; letter-spacing: 0.5px;
+    }
+    .entry-detail { font-size: 0.9rem; color: var(--c-muted); margin-bottom: 2px; }
+
+    .hidden-pass { letter-spacing: 2px; filter: blur(3px); user-select: none; }
+
+    .entry-buttons { display: flex; gap: 8px; margin-top: 10px; }
+    .toggle-btn, .delete-btn {
+      flex: 1; padding: 8px;
+      cursor: pointer; font-family: 'Cinzel', serif;
+      font-size: 0.62rem; letter-spacing: 1.5px; text-transform: uppercase;
+      font-weight: 600; transition: 0.2s ease;
+    }
+    .toggle-btn {
+      background: rgba(93,92,90,0.1); color: var(--c-silver);
+      border: 1px solid var(--c-panel);
+    }
+    .toggle-btn:hover { background: var(--c-panel); color: var(--c-light); }
+
+    .delete-btn {
+      background: rgba(80,20,20,0.15); color: rgba(210,150,150,0.65);
+      border: 1px solid rgba(100,40,40,0.25);
+    }
+    .delete-btn:hover { background: rgba(100,25,25,0.3); color: #e0a0a0; border-color: rgba(140,60,60,0.4); }
+
+    .copy-btn {
+      padding: 3px 8px;
+      cursor: pointer; font-family: 'Cinzel', serif;
+      font-size: 0.55rem; letter-spacing: 1px; text-transform: uppercase;
+      font-weight: 600; transition: 0.2s ease;
+      background: rgba(2,1,1,0.3); color: var(--c-muted);
+      border: 1px solid var(--c-panel);
+      vertical-align: middle; margin-left: 6px;
+    }
+    .copy-btn:hover { background: var(--c-panel); color: var(--c-silver); border-color: var(--c-muted); }
+    .copy-btn.copied { color: #90c090; border-color: rgba(80,140,80,0.4); }
+
+    .toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(70px);
+      background: var(--c-dark);
+      border: 1px solid var(--c-stone);
+      color: var(--c-light); padding: 11px 24px;
+      font-family: 'Cinzel', serif; font-size: 0.7rem;
+      letter-spacing: 2px; text-transform: uppercase;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.7);
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease;
+      opacity: 0; z-index: 999; white-space: nowrap; pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.err { border-color: rgba(140,50,50,0.5); color: #e0a0a0; }
+
+    .empty-state {
+      text-align: center; padding: 18px 0;
+      font-style: italic; font-size: 0.9rem; color: var(--c-stone);
+    }
+
+    /* Filter chips */
+    .filter-bar {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-bottom: 14px;
+    }
+    .filter-chip {
+      padding: 5px 12px;
+      font-family: 'Cinzel', serif; font-size: 0.62rem;
+      letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600;
+      cursor: pointer; transition: 0.18s ease;
+      background: rgba(2,1,1,0.4);
+      color: var(--c-muted);
+      border: 1px solid var(--c-panel);
+      user-select: none;
+    }
+    .filter-chip:hover { border-color: var(--c-muted); color: var(--c-silver); }
+    .filter-chip.active {
+      background: var(--c-panel);
+      border-color: var(--c-silver);
+      color: var(--c-light);
+    }
+
+    .footer {
+      text-align: center; margin-top: 22px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--c-panel);
+    }
+
+    /* ── Transfer Password Modal ── */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(2,1,1,0.82);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: all; }
+
+    .modal-box {
+      width: 340px; padding: 28px 28px 24px;
+      background: linear-gradient(160deg, var(--c-dark) 0%, var(--c-deep) 100%);
+      border: 1px solid var(--c-stone);
+      box-shadow: 0 0 0 1px var(--c-black), 0 8px 60px rgba(0,0,0,0.95),
+                  inset 0 1px 0 rgba(218,218,220,0.05);
+      position: relative;
+      transform: translateY(12px);
+      transition: transform 0.25s ease;
+    }
+    .modal-backdrop.open .modal-box { transform: translateY(0); }
+
+    .modal-box::before, .modal-box::after {
+      content: ''; position: absolute;
+      width: 12px; height: 12px;
+      border-color: var(--c-muted); border-style: solid;
+    }
+    .modal-box::before { top: 6px; left: 6px; border-width: 1px 0 0 1px; }
+    .modal-box::after  { bottom: 6px; right: 6px; border-width: 0 1px 1px 0; }
+
+    .modal-title {
+      font-family: 'Cinzel', serif; font-size: 0.75rem;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--c-light); text-align: center; margin-bottom: 4px;
+    }
+    .modal-sub {
+      font-family: 'Crimson Text', serif; font-style: italic;
+      font-size: 0.82rem; color: var(--c-muted);
+      text-align: center; margin-bottom: 18px;
+    }
+    .modal-input {
+      width: 100%; padding: 11px 13px;
+      border: 1px solid var(--c-panel);
+      background: rgba(2,1,1,0.5);
+      color: var(--c-light); outline: none;
+      font-family: 'Crimson Text', serif; font-size: 1rem;
+      margin-bottom: 14px; transition: 0.2s ease;
+    }
+    .modal-input:focus {
+      border-color: var(--c-muted);
+      box-shadow: 0 0 0 1px rgba(93,92,90,0.2), inset 0 1px 3px rgba(0,0,0,0.4);
+    }
+    .modal-input.shake {
+      animation: shake 0.35s ease;
+      border-color: rgba(180,60,60,0.6);
+    }
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-6px)}
+      40%{transform:translateX(6px)}
+      60%{transform:translateX(-4px)}
+      80%{transform:translateX(4px)}
+    }
+    .modal-row { display: flex; gap: 8px; }
+    .modal-confirm, .modal-cancel {
+      flex: 1; padding: 10px;
+      font-family: 'Cinzel', serif; font-size: 0.65rem;
+      letter-spacing: 2px; text-transform: uppercase; font-weight: 600;
+      cursor: pointer; transition: 0.2s ease; border: 1px solid;
+    }
+    .modal-confirm {
+      background: linear-gradient(160deg, var(--c-panel), var(--c-mid));
+      border-color: var(--c-stone); color: var(--c-light);
+    }
+    .modal-confirm:hover { border-color: var(--c-silver); background: var(--c-stone); }
+    .modal-cancel {
+      background: rgba(2,1,1,0.4); border-color: var(--c-panel); color: var(--c-muted);
+    }
+    .modal-cancel:hover { background: var(--c-panel); color: var(--c-silver); }
+    .modal-hint {
+      font-family: 'Crimson Text', serif; font-style: italic;
+      font-size: 0.78rem; color: rgba(180,80,80,0.75);
+      text-align: center; margin-top: 10px; min-height: 1.1em;
+    }
+    .modal-hint-display {
+      font-family: 'Crimson Text', serif; font-style: italic;
+      font-size: 0.8rem; color: var(--c-muted);
+      text-align: center; margin-bottom: 10px;
+      padding: 7px 10px;
+      border: 1px solid var(--c-panel);
+      background: rgba(2,1,1,0.3);
+    }
+    .modal-hint-display::before { content: '✦ Hint: '; color: var(--c-stone); font-style: normal; font-size: 0.68rem; letter-spacing: 1px; }
+
+    /* ── Cooldown bar ── */
+    .cooldown-wrap {
+      margin-top: 12px;
+      display: none;
+    }
+    .cooldown-wrap.active { display: block; }
+    .cooldown-label {
+      font-family: 'Cinzel', serif; font-size: 0.6rem;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--c-muted); margin-bottom: 6px;
+      text-align: center;
+    }
+    .cooldown-track {
+      width: 100%; height: 3px;
+      background: var(--c-panel);
+      overflow: hidden;
+    }
+    .cooldown-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--c-muted), var(--c-silver));
+      transform-origin: left;
+      transform: scaleX(1);
+      transition: transform linear;
+    }
+
+    /* ── ZIP passphrase toggle ── */
+    .zip-toggle-row {
+      display: flex; gap: 6px; margin-bottom: 14px;
+    }
+    .zip-toggle-btn {
+      flex: 1; padding: 9px 6px;
+      font-family: 'Cinzel', serif; font-size: 0.62rem;
+      letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600;
+      cursor: pointer; transition: 0.18s ease;
+      background: rgba(2,1,1,0.4);
+      color: var(--c-muted);
+      border: 1px solid var(--c-panel);
+    }
+    .zip-toggle-btn:hover { background: var(--c-panel); color: var(--c-silver); border-color: var(--c-muted); }
+    .zip-toggle-btn.active {
+      background: var(--c-panel);
+      border-color: var(--c-silver);
+      color: var(--c-light);
+    }
+
+    /* ── Stealth mode indicator ── */
+    .stealth-btn {
+      width: 100%; padding: 11px; margin-top: 8px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.68rem; letter-spacing: 1.5px; text-transform: uppercase;
+      font-weight: 600; cursor: pointer; transition: 0.2s ease;
+      background: rgba(2,1,1,0.3);
+      color: var(--c-muted);
+      border: 1px solid var(--c-mid);
+    }
+    .stealth-btn:hover { background: var(--c-mid); border-color: var(--c-stone); color: var(--c-silver); }
+    .stealth-btn.active {
+      background: rgba(80,20,20,0.2);
+      border-color: rgba(140,60,60,0.4);
+      color: #e0a0a0;
+    }
+  </style>
+</head>
+<body>
+  <div class="glow glow-1"></div>
+  <div class="glow glow-2"></div>
+
+  <div class="vault">
+    <div class="ornament"><span>✦</span></div>
+    <div class="title">Northbank Reserve Archives</div>
+    <div class="subtitle">Restricted Access · Confidential Records</div>
+
+    <div class="section">
+      <label>Section</label>
+      <input type="text" id="section" placeholder="e.g. Genshin Account">
+    </div>
+    <div class="section">
+      <label>Username</label>
+      <input type="text" id="username" placeholder="Enter username">
+    </div>
+    <div class="section">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="Enter password">
+    </div>
+    <button class="save-btn" onclick="addEntry()">⊹ Save Entry</button>
+
+    <div class="divider"><div class="divider-diamond"></div></div>
+
+    <div class="transfer-label">Transfer Vault</div>
+    <div class="transfer-row">
+      <button class="transfer-btn" onclick="exportVault()">⬇ Export JSON</button>
+      <button class="transfer-btn" onclick="document.getElementById('importFileInput').click()">⬆ Import JSON</button>
+    </div>
+    <button class="zip-btn" onclick="exportZip()">🗜 Export as ZIP (HTML + JSON)</button>
+    <button class="stealth-btn" id="stealthBtn" onclick="toggleStealth()">👁 Stealth Mode: Off</button>
+    <input type="file" id="importFileInput" accept=".json" onchange="importVault(event)">
+
+    <div class="divider"><div class="divider-diamond"></div></div>
+
+    <div id="savedBox" style="display: block;">
+      <h3>◈ Saved Records</h3>
+      <div class="filter-bar" id="filterBar"><button class="filter-chip active">All</button><button class="filter-chip">Gmail</button></div>
+      <div id="entries"><div class="entry"><div class="entry-site">Gmail</div><div class="entry-detail">User: maristelamark243@gmail.com<button class="copy-btn" onclick="copyField(this,'maristelamark243@gmail.com')">Copy</button></div><div class="entry-detail">Pass: <span class="hidden-pass" id="pass-0">••••••••••</span><button class="copy-btn" onclick="copyField(this,getData()[0].password)">Copy</button></div><div class="entry-buttons"><button class="toggle-btn" onclick="togglePass(this,0)">Show</button><button class="delete-btn" onclick="deleteEntry(0)">Delete</button></div></div><div class="entry"><div class="entry-site">Gmail</div><div class="entry-detail">User: markguintomaristela@gmail.com<button class="copy-btn" onclick="copyField(this,'markguintomaristela@gmail.com')">Copy</button></div><div class="entry-detail">Pass: <span class="hidden-pass" id="pass-1">••••••••••</span><button class="copy-btn" onclick="copyField(this,getData()[1].password)">Copy</button></div><div class="entry-buttons"><button class="toggle-btn" onclick="togglePass(this,1)">Show</button><button class="delete-btn" onclick="deleteEntry(1)">Delete</button></div></div><div class="entry"><div class="entry-site">Gmail</div><div class="entry-detail">User: maristelamark123@gmail.com<button class="copy-btn" onclick="copyField(this,'maristelamark123@gmail.com')">Copy</button></div><div class="entry-detail">Pass: <span class="hidden-pass" id="pass-2">••••••••••</span><button class="copy-btn" onclick="copyField(this,getData()[2].password)">Copy</button></div><div class="entry-buttons"><button class="toggle-btn" onclick="togglePass(this,2)">Show</button><button class="delete-btn" onclick="deleteEntry(2)">Delete</button></div></div><div class="entry"><div class="entry-site">Gmail</div><div class="entry-detail">User: pogikarlo65@gmail.com<button class="copy-btn" onclick="copyField(this,'pogikarlo65@gmail.com')">Copy</button></div><div class="entry-detail">Pass: <span class="hidden-pass" id="pass-3">••••••••••</span><button class="copy-btn" onclick="copyField(this,getData()[3].password)">Copy</button></div><div class="entry-buttons"><button class="toggle-btn" onclick="togglePass(this,3)">Show</button><button class="delete-btn" onclick="deleteEntry(3)">Delete</button></div></div></div>
+    </div>
+    <div id="emptyState" class="empty-state" style="display: none;">No records sealed yet.</div>
+
+    <div class="footer">Snezhnaya Intelligence Division · Restricted Access</div>
+  </div>
+
+  <!-- Export Modal: set passphrase + hint for this file -->
+  <div class="modal-backdrop" id="exportModal">
+    <div class="modal-box">
+      <div class="modal-title">Export Authorisation</div>
+      <div class="modal-sub">Set a passphrase to seal this JSON file</div>
+      <input class="modal-input" type="password" id="exportPwNew" placeholder="Create passphrase…" autocomplete="off">
+      <input class="modal-input" type="password" id="exportPwConfirm" placeholder="Confirm passphrase…" autocomplete="off">
+      <input class="modal-input" type="text" id="exportPwHint" placeholder="Hint (optional — stored in file)" autocomplete="off" style="font-style:italic;">
+      <div class="modal-row">
+        <button class="modal-confirm" onclick="exportModalConfirm()">⊹ Seal & Export</button>
+        <button class="modal-cancel" onclick="exportModalClose()">✕ Cancel</button>
+      </div>
+      <div class="modal-hint" id="exportModalHint"></div>
+    </div>
+  </div>
+
+  <!-- Import Modal: enter passphrase, shows hint from file if present -->
+  <div class="modal-backdrop" id="importModal">
+    <div class="modal-box">
+      <div class="modal-title">Import Authorisation</div>
+      <div class="modal-sub">Enter the passphrase used to seal this file</div>
+      <div class="modal-hint-display" id="importHintDisplay" style="display:none;"></div>
+      <input class="modal-input" type="password" id="importPwInput" placeholder="Passphrase…" autocomplete="off">
+      <div class="modal-row">
+        <button class="modal-confirm" onclick="importModalConfirm()">⊹ Decrypt & Import</button>
+        <button class="modal-cancel" onclick="importModalClose()">✕ Cancel</button>
+      </div>
+      <div class="modal-hint" id="importModalHint"></div>
+      <div class="cooldown-wrap" id="importCooldown">
+        <div class="cooldown-label" id="importCooldownLabel">Verifying — 2s</div>
+        <div class="cooldown-track"><div class="cooldown-fill" id="importCooldownFill"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ZIP Export Modal: keep or change passphrase -->
+  <div class="modal-backdrop" id="zipModal">
+    <div class="modal-box">
+      <div class="modal-title">Seal Archive</div>
+      <div class="modal-sub">Choose how to seal this ZIP</div>
+      <div class="zip-toggle-row">
+        <button class="zip-toggle-btn active" id="zipKeepBtn" onclick="zipSetMode('keep')">⊹ Keep Passphrase</button>
+        <button class="zip-toggle-btn" id="zipChangeBtn" onclick="zipSetMode('change')">✎ Change Passphrase</button>
+      </div>
+      <div id="zipKeepFields">
+        <input class="modal-input" type="password" id="zipCurrentPw" placeholder="Enter current passphrase…" autocomplete="off">
+      </div>
+      <div id="zipChangeFields" style="display:none;">
+        <input class="modal-input" type="password" id="zipNewPw" placeholder="Create new passphrase…" autocomplete="off">
+        <input class="modal-input" type="password" id="zipConfirmPw" placeholder="Confirm new passphrase…" autocomplete="off">
+        <input class="modal-input" type="text" id="zipHintPw" placeholder="Hint (optional — stored in file)" autocomplete="off" style="font-style:italic;">
+      </div>
+      <div class="modal-row">
+        <button class="modal-confirm" onclick="zipModalConfirm()">⊹ Seal & Export</button>
+        <button class="modal-cancel" onclick="zipModalClose()">✕ Cancel</button>
+      </div>
+      <div class="modal-hint" id="zipModalHint"></div>
+    </div>
+  </div>
+
+  <div class="toast show" id="toast">Sealing archive...</div>
+
+  <script>
+    function showToast(msg, isError) {
+      var t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.toggle("err", !!isError);
+      t.classList.add("show");
+      clearTimeout(t._timer);
+      t._timer = setTimeout(function(){ t.classList.remove("show"); }, 2800);
+    }
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+
+    function copyField(btn, text) {
+      navigator.clipboard.writeText(text).then(function() {
+        var orig = btn.textContent;
+        btn.textContent = "✓";
+        btn.classList.add("copied");
+        setTimeout(function() { btn.textContent = orig; btn.classList.remove("copied"); }, 1400);
+      }).catch(function() { showToast("Copy failed", true); });
+    }
+
+    // ════════════════════════════════════════════
+    //  VAULT STATE — session only, wiped on tab close
+    // ════════════════════════════════════════════
+    var SESSION_KEY = "northbankVaultSession";
+    var STEALTH_KEY = "northbankStealth";
+
+    var _sessionUnlocked = false;
+    var _memoryVault     = [];
+
+    function isStealthOn() { return sessionStorage.getItem(STEALTH_KEY) === "1"; }
+
+    // ── Helpers ──────────────────────────────────
+    function toB64(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+    function frB64(str) { return Uint8Array.from(atob(str), c => c.charCodeAt(0)); }
+    var enc = new TextEncoder();
+    var dec = new TextDecoder();
+
+    // ════════════════════════════════════════════
+    //  HARDENED JSON ENCRYPTION
+    //  Anti-brute-force measures:
+    //  1. 600,000 PBKDF2 iterations (~3× slower per guess)
+    //  2. Dual-key derivation — separate keys for encryption & HMAC
+    //  3. HMAC-SHA256 canary embedded in plaintext — only correct
+    //     password can produce a valid canary; wrong passwords
+    //     decrypt to garbage with no structural tell
+    //  4. Timing floor — decryption always waits ≥1.5 s so timing
+    //     attacks can't distinguish wrong from right password
+    //  5. Random 32-byte salt + 12-byte IV per export
+    //  6. Version tag "_nbr2" for format identification
+    // ════════════════════════════════════════════
+    var PBKDF2_ITERS  = 600000;
+    var TIMING_FLOOR  = 1500; // ms minimum per decrypt attempt
+
+    async function deriveKeys(passphrase, salt) {
+      var km = await crypto.subtle.importKey(
+        "raw", enc.encode(passphrase), "PBKDF2", false, ["deriveKey", "deriveBits"]
+      );
+      // Derive 512 bits, split into two 256-bit keys
+      var bits = await crypto.subtle.deriveBits(
+        { name:"PBKDF2", salt:salt, iterations:PBKDF2_ITERS, hash:"SHA-256" },
+        km, 512
+      );
+      var encKeyBuf  = bits.slice(0, 32);
+      var hmacKeyBuf = bits.slice(32, 64);
+      var encKey  = await crypto.subtle.importKey("raw", encKeyBuf,  {name:"AES-GCM"}, false, ["encrypt","decrypt"]);
+      var hmacKey = await crypto.subtle.importKey("raw", hmacKeyBuf, {name:"HMAC", hash:"SHA-256"}, false, ["sign","verify"]);
+      return { encKey, hmacKey };
+    }
+
+    async function vaultEncrypt(plaintext, passphrase) {
+      var salt = crypto.getRandomValues(new Uint8Array(32));
+      var iv   = crypto.getRandomValues(new Uint8Array(12));
+      var { encKey, hmacKey } = await deriveKeys(passphrase, salt);
+
+      // Build canary: HMAC of salt (proves key correctness without leaking plaintext)
+      var canaryBuf = await crypto.subtle.sign("HMAC", hmacKey, salt);
+      var canary    = toB64(canaryBuf);
+
+      // Embed canary inside the plaintext envelope
+      var envelope = JSON.stringify({ _c: canary, d: plaintext });
+      var cipher   = await crypto.subtle.encrypt(
+        { name:"AES-GCM", iv }, encKey, enc.encode(envelope)
+      );
+      return { _nbr2:1, s:toB64(salt), v:toB64(iv), d:toB64(cipher) };
+    }
+
+    // Returns { ok: true, data } or { ok: false }
+    // Always waits TIMING_FLOOR ms regardless of outcome (anti-timing)
+    async function vaultDecrypt(pkg, passphrase) {
+      var t0 = performance.now();
+      var result = { ok: false };
+      try {
+        if (!pkg._nbr2) throw new Error("bad_format");
+        var salt = frB64(pkg.s);
+        var { encKey, hmacKey } = await deriveKeys(passphrase, salt);
+        var plainBuf = await crypto.subtle.decrypt(
+          { name:"AES-GCM", iv: frB64(pkg.v) }, encKey, frB64(pkg.d)
+        );
+        var envelope = JSON.parse(dec.decode(plainBuf));
+
+        // Verify canary — wrong password → AES-GCM auth tag fails above,
+        // this is a secondary integrity check for belt-and-suspenders
+        var expectedBuf = await crypto.subtle.sign("HMAC", hmacKey, salt);
+        var expected    = toB64(expectedBuf);
+        if (envelope._c !== expected) throw new Error("canary_mismatch");
+
+        result = { ok: true, data: envelope.d };
+      } catch(_) { /* intentionally silent */ }
+
+      // Timing floor — enforce minimum wait so fast rejections aren't distinguishable
+      var elapsed = performance.now() - t0;
+      if (elapsed < TIMING_FLOOR) {
+        await new Promise(r => setTimeout(r, TIMING_FLOOR - elapsed));
+      }
+      return result;
+    }
+
+    // ── Session storage (plain JSON — no password needed, tab-scoped) ──
+    function persistVault() {
+      if (isStealthOn()) return;
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(_memoryVault));
+    }
+
+    function getData()  { return _memoryVault; }
+    function setData(d) { _memoryVault = d; persistVault(); }
+
+    // ════════════════════════════════════════════
+    //  BOOT — open directly, session-scoped
+    // ════════════════════════════════════════════
+    function initLockScreen() {
+      _sessionUnlocked = true;
+      var stored = sessionStorage.getItem(SESSION_KEY);
+      if (stored) {
+        try {
+          var parsed = JSON.parse(stored);
+          _memoryVault = Array.isArray(parsed) ? parsed : [];
+        } catch(e) { _memoryVault = []; }
+      } else {
+        _memoryVault = [];
+      }
+      updateStealthBtn();
+      render();
+    }
+
+    // ════════════════════════════════════════════
+    //  STEALTH MODE
+    // ════════════════════════════════════════════
+    function updateStealthBtn() {
+      var btn = document.getElementById("stealthBtn");
+      if (isStealthOn()) {
+        btn.textContent = "👁 Stealth Mode: On";
+        btn.classList.add("active");
+      } else {
+        btn.textContent = "👁 Stealth Mode: Off";
+        btn.classList.remove("active");
+      }
+    }
+
+    function toggleStealth() {
+      if (isStealthOn()) {
+        sessionStorage.removeItem(STEALTH_KEY);
+        persistVault();
+        showToast("Stealth off — vault persists this session");
+      } else {
+        sessionStorage.setItem(STEALTH_KEY, "1");
+        sessionStorage.removeItem(SESSION_KEY);
+        showToast("Stealth on — vault cleared from session");
+      }
+      updateStealthBtn();
+    }
+
+    // ════════════════════════════════════════════
+    //  RENDER / ENTRIES
+    // ════════════════════════════════════════════
+    var activeFilter = "All";
+
+    function renderFilterBar(data) {
+      var bar = document.getElementById("filterBar");
+      var sections = ["All"].concat(
+        data.map(function(e){ return e.section; })
+            .filter(function(v,i,a){ return a.indexOf(v)===i; }).sort()
+      );
+      bar.innerHTML = "";
+      sections.forEach(function(sec) {
+        var chip = document.createElement("button");
+        chip.className = "filter-chip" + (sec === activeFilter ? " active" : "");
+        chip.textContent = sec;
+        chip.onclick = function() { activeFilter = sec; render(); };
+        bar.appendChild(chip);
+      });
+    }
+
+    function render() {
+      var data = getData();
+      var box  = document.getElementById("savedBox");
+      var empty = document.getElementById("emptyState");
+      var container = document.getElementById("entries");
+
+      if (data.length === 0) {
+        box.style.display="none"; empty.style.display="block";
+        activeFilter = "All"; return;
+      }
+      box.style.display="block"; empty.style.display="none";
+      renderFilterBar(data);
+
+      var sections = data.map(function(e){ return e.section; });
+      if (activeFilter !== "All" && sections.indexOf(activeFilter) === -1) {
+        activeFilter = "All"; renderFilterBar(data);
+      }
+
+      var filtered = activeFilter === "All"
+        ? data : data.filter(function(e){ return e.section === activeFilter; });
+
+      container.innerHTML = "";
+      filtered.forEach(function(entry) {
+        var realIndex = data.indexOf(entry);
+        var div = document.createElement("div");
+        div.className = "entry";
+        div.innerHTML =
+          "<div class='entry-site'>"  + escHtml(entry.section)   + "</div>" +
+          "<div class='entry-detail'>User: " + escHtml(entry.username) + "<button class='copy-btn' onclick='copyField(this," + JSON.stringify(entry.username) + ")'>Copy</button></div>" +
+          "<div class='entry-detail'>Pass: <span class='hidden-pass' id='pass-" + realIndex + "'>••••••••••</span><button class='copy-btn' onclick='copyField(this," + JSON.stringify(entry.password) + ")'>Copy</button></div>" +
+          "<div class='entry-buttons'>" +
+            "<button class='toggle-btn' onclick='togglePass(this," + realIndex + ")'>Show</button>" +
+            "<button class='delete-btn' onclick='deleteEntry(" + realIndex + ")'>Delete</button>" +
+          "</div>";
+        container.appendChild(div);
+      });
+    }
+
+    function togglePass(btn, i) {
+      var span = document.getElementById("pass-" + i);
+      var data = getData();
+      if (span.classList.contains("hidden-pass")) {
+        span.classList.remove("hidden-pass"); span.textContent = data[i].password; btn.textContent = "Hide";
+      } else {
+        span.classList.add("hidden-pass"); span.textContent = "••••••••••"; btn.textContent = "Show";
+      }
+    }
+
+    function addEntry() {
+      var section  = document.getElementById("section").value.trim();
+      var username = document.getElementById("username").value.trim();
+      var password = document.getElementById("password").value;
+      if (!section || !username || !password) { showToast("All fields required", true); return; }
+      var data = getData();
+      data.push({ section:section, username:username, password:password });
+      setData(data);
+      document.getElementById("section").value = "";
+      document.getElementById("username").value = "";
+      document.getElementById("password").value = "";
+      render(); showToast("Entry saved");
+    }
+
+    function deleteEntry(i) {
+      var data = getData(); data.splice(i,1); setData(data); render(); showToast("Entry deleted");
+    }
+
+    // ════════════════════════════════════════════
+    //  PER-FILE PASSPHRASE MODALS
+    // ════════════════════════════════════════════
+    function shakeInput(el) {
+      el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
+    }
+
+    // ── Export Modal ──
+    var _exportCallback = null;
+
+    function exportVault() {
+      var data = getData();
+      if (!data.length) { showToast("No records to export", true); return; }
+      document.getElementById("exportPwNew").value     = "";
+      document.getElementById("exportPwConfirm").value = "";
+      document.getElementById("exportPwHint").value    = "";
+      document.getElementById("exportModalHint").textContent = "";
+      _exportCallback = async function(pw, hint) {
+        try {
+          var encData = await vaultEncrypt(JSON.stringify(getData(), null, 2), pw);
+          var payload = { hint: hint || "", data: encData };
+          var blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+          var url  = URL.createObjectURL(blob);
+          var a    = document.createElement("a"); a.href=url; a.download="northbank-reserve-data.json";
+          a.click(); URL.revokeObjectURL(url); showToast("Vault sealed & exported");
+        } catch(e) { showToast("Encryption failed", true); }
+      };
+      document.getElementById("exportModal").classList.add("open");
+      setTimeout(function(){ document.getElementById("exportPwNew").focus(); }, 80);
+    }
+
+    function exportModalClose() {
+      document.getElementById("exportModal").classList.remove("open");
+      _exportCallback = null;
+    }
+
+    async function exportModalConfirm() {
+      var pw1  = document.getElementById("exportPwNew").value;
+      var pw2  = document.getElementById("exportPwConfirm").value;
+      var hint = document.getElementById("exportPwHint").value.trim();
+      var errEl = document.getElementById("exportModalHint");
+      if (!pw1) { shakeInput(document.getElementById("exportPwNew")); errEl.textContent = "Passphrase cannot be empty."; return; }
+      if (pw1 !== pw2) {
+        shakeInput(document.getElementById("exportPwConfirm"));
+        errEl.textContent = "Passphrases do not match.";
+        document.getElementById("exportPwConfirm").value = "";
+        document.getElementById("exportPwConfirm").focus(); return;
+      }
+      document.getElementById("exportModal").classList.remove("open");
+      if (_exportCallback) { await _exportCallback(pw1, hint); _exportCallback = null; }
+    }
+
+    document.addEventListener("keydown", function(e) {
+      if (!document.getElementById("exportModal").classList.contains("open")) return;
+      if (e.key === "Enter")  exportModalConfirm();
+      if (e.key === "Escape") exportModalClose();
+    });
+
+    // ── Import Modal ──
+    var _importFileContent = null;
+
+    function importVault(event) {
+      var file = event.target.files[0]; if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e2) {
+        try {
+          var raw = e2.target.result;
+          var pkg = JSON.parse(raw);
+          // New format: { hint, data: { _nbr2, s, v, d } }
+          if (pkg && pkg.data && pkg.data._nbr2) {
+            _importFileContent = pkg;
+          } else {
+            showToast("Unrecognised file format", true);
+            document.getElementById("importFileInput").value = ""; return;
+          }
+          var hintBox = document.getElementById("importHintDisplay");
+          var hint = _importFileContent.hint || "";
+          if (hint) { hintBox.textContent = hint; hintBox.style.display = ""; }
+          else { hintBox.style.display = "none"; }
+          document.getElementById("importPwInput").value = "";
+          document.getElementById("importModalHint").textContent = "";
+          document.getElementById("importModal").classList.add("open");
+          setTimeout(function(){ document.getElementById("importPwInput").focus(); }, 80);
+        } catch(err) { showToast("Invalid vault file", true); }
+        document.getElementById("importFileInput").value = "";
+      };
+      reader.readAsText(file);
+    }
+
+    function importModalClose() {
+      document.getElementById("importModal").classList.remove("open");
+      _importFileContent = null;
+    }
+
+    async function importModalConfirm() {
+      var pw    = document.getElementById("importPwInput").value;
+      var errEl = document.getElementById("importModalHint");
+      if (!pw) { shakeInput(document.getElementById("importPwInput")); errEl.textContent = "Passphrase cannot be empty."; return; }
+
+      var confirmBtn  = document.querySelector("#importModal .modal-confirm");
+      var cancelBtn   = document.querySelector("#importModal .modal-cancel");
+      var cooldownWrap  = document.getElementById("importCooldown");
+      var cooldownLabel = document.getElementById("importCooldownLabel");
+      var cooldownFill  = document.getElementById("importCooldownFill");
+
+      // Lock UI
+      confirmBtn.disabled = true;
+      cancelBtn.disabled  = true;
+      confirmBtn.textContent = "⊹ Verifying…";
+      errEl.textContent = "";
+
+      // Start cooldown bar — animate from full width to zero over TIMING_FLOOR ms
+      cooldownWrap.classList.add("active");
+      cooldownFill.style.transition = "none";
+      cooldownFill.style.transform  = "scaleX(1)";
+      void cooldownFill.offsetWidth; // force reflow
+      cooldownFill.style.transition = "transform " + (TIMING_FLOOR / 1000) + "s linear";
+      cooldownFill.style.transform  = "scaleX(0)";
+
+      // Tick label: "Verifying — 5s", "Verifying — 4s" …
+      var remaining = Math.ceil(TIMING_FLOOR / 1000);
+      cooldownLabel.textContent = "Verifying — " + remaining + "s";
+      var tickInterval = setInterval(function() {
+        remaining--;
+        if (remaining > 0) {
+          cooldownLabel.textContent = "Verifying — " + remaining + "s";
+        } else {
+          clearInterval(tickInterval);
+        }
+      }, 1000);
+
+      var decryptResult;
+      try {
+        decryptResult = await vaultDecrypt(_importFileContent.data, pw);
+      } catch(e) {
+        decryptResult = { ok: false };
+      }
+
+      clearInterval(tickInterval);
+      cooldownWrap.classList.remove("active");
+      cooldownFill.style.transition = "none";
+
+      // Restore UI
+      confirmBtn.disabled = false;
+      cancelBtn.disabled  = false;
+      confirmBtn.textContent = "⊹ Decrypt & Import";
+
+      if (decryptResult.ok) {
+        try {
+          var incoming = JSON.parse(decryptResult.data);
+          if (!Array.isArray(incoming)) throw new Error();
+          incoming.forEach(function(item){ if(!("section" in item && "username" in item && "password" in item)) throw new Error(); });
+          var existing = getData();
+          var keys = new Set(existing.map(function(e){ return e.section+e.username+e.password; }));
+          var added = 0;
+          incoming.forEach(function(item){
+            var k = item.section+item.username+item.password;
+            if(!keys.has(k)){ existing.push(item); keys.add(k); added++; }
+          });
+          setData(existing); render();
+          document.getElementById("importModal").classList.remove("open");
+          _importFileContent = null;
+          showToast("Imported " + added + " record" + (added===1?"":"s"));
+        } catch(e) {
+          shakeInput(document.getElementById("importPwInput"));
+          errEl.textContent = "Corrupted vault data.";
+        }
+      } else {
+        shakeInput(document.getElementById("importPwInput"));
+        errEl.textContent = "Wrong passphrase or corrupted file.";
+        document.getElementById("importPwInput").value = "";
+        document.getElementById("importPwInput").focus();
+      }
+    }
+
+    document.addEventListener("keydown", function(e) {
+      if (!document.getElementById("importModal").classList.contains("open")) return;
+      if (e.key === "Enter")  importModalConfirm();
+      if (e.key === "Escape") importModalClose();
+    });
+
+    // ── Export ZIP ──
+    var _zipMode = "keep";
+
+    function zipSetMode(mode) {
+      _zipMode = mode;
+      document.getElementById("zipKeepBtn").classList.toggle("active", mode === "keep");
+      document.getElementById("zipChangeBtn").classList.toggle("active", mode === "change");
+      document.getElementById("zipKeepFields").style.display   = mode === "keep"   ? "" : "none";
+      document.getElementById("zipChangeFields").style.display = mode === "change" ? "" : "none";
+      document.getElementById("zipModalHint").textContent = "";
+      var focusId = mode === "keep" ? "zipCurrentPw" : "zipNewPw";
+      setTimeout(function(){ document.getElementById(focusId).focus(); }, 40);
+    }
+
+    function zipModalClose() {
+      document.getElementById("zipModal").classList.remove("open");
+    }
+
+    async function zipModalConfirm() {
+      var errEl = document.getElementById("zipModalHint");
+      var pw, hint = "";
+      if (_zipMode === "keep") {
+        pw = document.getElementById("zipCurrentPw").value;
+        if (!pw) { shakeInput(document.getElementById("zipCurrentPw")); errEl.textContent = "Passphrase cannot be empty."; return; }
+      } else {
+        var pw1 = document.getElementById("zipNewPw").value;
+        var pw2 = document.getElementById("zipConfirmPw").value;
+        hint    = document.getElementById("zipHintPw").value.trim();
+        if (!pw1) { shakeInput(document.getElementById("zipNewPw")); errEl.textContent = "Passphrase cannot be empty."; return; }
+        if (pw1 !== pw2) {
+          shakeInput(document.getElementById("zipConfirmPw"));
+          errEl.textContent = "Passphrases do not match.";
+          document.getElementById("zipConfirmPw").value = "";
+          document.getElementById("zipConfirmPw").focus(); return;
+        }
+        pw = pw1;
+      }
+      document.getElementById("zipModal").classList.remove("open");
+      try {
+        showToast("Sealing archive...");
+        var encData  = await vaultEncrypt(JSON.stringify(getData(), null, 2), pw);
+        var payload  = JSON.stringify({ hint: hint || "", data: encData }, null, 2);
+        var htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+        var zip    = new JSZip();
+        var folder = zip.folder("northbank-reserve-archives");
+        folder.file("northbank-reserve-archives.html", htmlContent);
+        folder.file("northbank-reserve-data.json", payload);
+        var blob = await zip.generateAsync({ type:"blob", compression:"DEFLATE" });
+        var url  = URL.createObjectURL(blob);
+        var a    = document.createElement("a"); a.href=url; a.download="northbank-reserve-archives.zip";
+        a.click(); URL.revokeObjectURL(url); showToast("Archive sealed");
+      } catch(e) { showToast("Encryption failed", true); }
+    }
+
+    document.addEventListener("keydown", function(e) {
+      if (!document.getElementById("zipModal").classList.contains("open")) return;
+      if (e.key === "Enter")  zipModalConfirm();
+      if (e.key === "Escape") zipModalClose();
+    });
+
+    async function exportZip() {
+      var data = getData();
+      if (!data.length) { showToast("No records to export", true); return; }
+      _zipMode = "keep";
+      document.getElementById("zipCurrentPw").value = "";
+      document.getElementById("zipNewPw").value      = "";
+      document.getElementById("zipConfirmPw").value  = "";
+      document.getElementById("zipHintPw").value     = "";
+      document.getElementById("zipModalHint").textContent = "";
+      zipSetMode("keep");
+      document.getElementById("zipModal").classList.add("open");
+    }
+
+    // ── Boot ──
+    initLockScreen();
+  </script>
+
+
+</body></html>

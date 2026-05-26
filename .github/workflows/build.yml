@@ -22,17 +22,23 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 17
+          cache: gradle
 
-      - name: Clear Gradle cache
+      - name: Remove broken Gradle caches
         run: |
-          rm -rf ~/.gradle/caches
-          rm -rf ~/.gradle/wrapper
+          rm -rf ~/.gradle/caches/
+          rm -rf ~/.gradle/wrapper/
 
-      - name: Install dependencies
+      - name: Initialize npm
+        run: npm init -y
+
+      - name: Install Capacitor
         run: |
-          npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install \
+          @capacitor/core@5 \
+          @capacitor/cli@5 \
+          @capacitor/android@5
 
       - name: Create Capacitor config
         run: |
@@ -42,16 +48,16 @@ jobs:
             "webDir": "www"
           }' > capacitor.config.json
 
-      - name: Copy web files
+      - name: Copy website
         run: |
           mkdir -p www
           cp index.html www/index.html
 
-      - name: Add Android platform
+      - name: Add Android
         run: |
           npx cap add android || true
 
-      - name: Sync Capacitor
+      - name: Sync Android
         run: |
           npx cap sync android
 
@@ -59,7 +65,8 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew clean
+          ./gradlew assembleDebug --refresh-dependencies --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

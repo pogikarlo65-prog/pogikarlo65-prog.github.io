@@ -23,9 +23,16 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-          cache: gradle
+          # ✅ Removed cache: gradle — avoids restoring a broken cache
 
-      - name: Remove broken Gradle caches
+      - name: Free up disk space  # ✅ Added — runner disk can fill up fast
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          df -h  # prints available space so you can debug if it fails again
+
+      - name: Clear Gradle caches
         run: |
           rm -rf ~/.gradle/caches/
           rm -rf ~/.gradle/wrapper/
@@ -54,19 +61,23 @@ jobs:
           cp index.html www/index.html
 
       - name: Add Android
-        run: |
-          npx cap add android || true
+        run: npx cap add android || true
 
       - name: Sync Android
-        run: |
-          npx cap sync android
+        run: npx cap sync android
 
       - name: Build APK
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2g"  # ✅ More heap
         run: |
           cd android
           chmod +x gradlew
           ./gradlew clean
-          ./gradlew assembleDebug --refresh-dependencies --no-daemon
+          ./gradlew assembleDebug \
+            --refresh-dependencies \
+            --no-daemon \
+            --no-build-cache \        # ✅ Forces fresh jar creation
+            --no-configuration-cache  # ✅ Avoids stale config cache issues
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

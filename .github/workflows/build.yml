@@ -1,58 +1,87 @@
 name: Build Android APK
 
 on:
-  push:
-    branches: [main]
+push:
+branches:
+- main
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+build:
+runs-on: ubuntu-latest
 
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
+steps:
+  # Checkout repository
+  - name: Checkout source
+    uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/filesystem
+  # Setup Node.js
+  - name: Setup Node.js
+    uses: actions/setup-node@v4
+    with:
+      node-version: 18
 
-      - name: Setup Capacitor config
-        run: |
-          cat > capacitor.config.json << 'EOF'
-          {
-            "appId": "com.northbank.reserve",
-            "appName": "Northbank Reserve",
-            "webDir": "www"
-          }
-          EOF
+  # Setup Java
+  - name: Setup Java
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: 17
 
-      - name: Copy HTML into www
-        run: |
-          mkdir -p www
-          cp index.html www/index.html
+  # Install Capacitor dependencies
+  - name: Install dependencies
+    run: |
+      npm init -y
+      npm install @capacitor/core @capacitor/cli @capacitor/android
 
-      - name: Add Android platform
-        run: npx cap add android
+  # Create Capacitor config
+  - name: Create Capacitor config
+    run: |
+      cat > capacitor.config.json << EOF
+      {
+        "appId": "com.northbank.reserve",
+        "appName": "Northbank Reserve",
+        "webDir": "www"
+      }
+      EOF
 
-      - name: Sync
-        run: npx cap sync android
+  # Copy website files
+  - name: Copy web files
+    run: |
+      mkdir -p www
 
-      - uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+      # Copy all needed files
+      cp index.html www/ || true
+      cp style.css www/ || true
+      cp app.js www/ || true
 
-      - name: Build APK
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
+      # Copy assets folder if it exists
+      cp -r assets www/assets || true
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v3
-        with:
-          name: northbank-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+  # Add Android platform safely
+  - name: Add Android platform
+    run: |
+      npx cap add android || true
+
+  # Sync Capacitor
+  - name: Sync Capacitor
+    run: |
+      npx cap sync android
+
+  # Build APK
+  - name: Build APK
+    run: |
+      cd android
+      chmod +x gradlew
+      ./gradlew assembleDebug
+
+  # Verify APK exists
+  - name: Verify APK
+    run: |
+      find android -name "*.apk"
+
+  # Upload APK artifact
+  - name: Upload APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: northbank-apk
+      path: android/app/build/outputs/apk/debug/app-debug.apk

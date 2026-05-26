@@ -23,17 +23,11 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-          # ✅ Removed cache: gradle — avoids restoring a broken cache
 
-      - name: Free up disk space  # ✅ Added — runner disk can fill up fast
+      - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc
-          sudo rm -rf /usr/local/share/boost
-          df -h  # prints available space so you can debug if it fails again
-
-      - name: Clear Gradle caches
-        run: |
           rm -rf ~/.gradle/caches/
           rm -rf ~/.gradle/wrapper/
 
@@ -63,21 +57,30 @@ jobs:
       - name: Add Android
         run: npx cap add android || true
 
+      - name: Fix bcprov Gradle issue
+        run: |
+          echo "android.jetifier.ignorelist=bcprov-jdk18on" >> android/gradle.properties
+          cat >> android/build.gradle << 'EOF'
+
+          subprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force 'org.bouncycastle:bcprov-jdk18on:1.77'
+                  }
+              }
+          }
+          EOF
+
       - name: Sync Android
         run: npx cap sync android
 
       - name: Build APK
         env:
-          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2g"  # ✅ More heap
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2g"
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew clean
-          ./gradlew assembleDebug \
-            --refresh-dependencies \
-            --no-daemon \
-            --no-build-cache \        # ✅ Forces fresh jar creation
-            --no-configuration-cache  # ✅ Avoids stale config cache issues
+          ./gradlew assembleDebug --no-daemon --no-build-cache
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

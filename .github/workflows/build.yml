@@ -24,56 +24,53 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Free disk space
+      - name: Clear Gradle cache
         run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          rm -rf ~/.gradle/caches/
-          rm -rf ~/.gradle/wrapper/
+          rm -rf ~/.gradle
+          rm -rf android/.gradle || true
 
-      - name: Initialize npm
-        run: npm init -y
-
-      - name: Install Capacitor
+      - name: Install dependencies
         run: |
-          npm install \
-          @capacitor/core@5 \
-          @capacitor/cli@5 \
-          @capacitor/android@5
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/assets
 
       - name: Create Capacitor config
         run: |
-          echo '{
+          cat > capacitor.config.json << EOF
+          {
             "appId": "com.northbank.reserve",
-            "appName": "Northbank Reserve",
+            "appName": "Northbank Snezhnaya Archive",
             "webDir": "www"
-          }' > capacitor.config.json
+          }
+          EOF
 
-      - name: Copy website
+      - name: Prepare web files
         run: |
           mkdir -p www
           cp index.html www/index.html
 
-      - name: Add Android
-        run: npx cap add android || true
-
-      - name: Upgrade Gradle wrapper to 8.3
+      - name: Generate app icons
         run: |
-          sed -i 's/gradle-8.2.1-all/gradle-8.3-all/g' android/gradle/wrapper/gradle-wrapper.properties
+          npx capacitor-assets generate
 
-      - name: Sync Android
-        run: npx cap sync android
+      - name: Add Android platform
+        run: |
+          npx cap add android || true
+
+      - name: Sync Capacitor
+        run: |
+          npx cap sync android
 
       - name: Build APK
-        env:
-          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2g"
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --no-build-cache
+          ./gradlew clean
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: northbank-apk
+          name: northbank-snezhnaya-archive-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk

@@ -842,6 +842,23 @@
       el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
     }
 
+    // ── Download helper (works in browser AND Android WebView) ──
+    async function triggerDownload(blob, filename) {
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], filename)] })) {
+        try {
+          await navigator.share({ files: [new File([blob], filename)], title: filename });
+          return;
+        } catch(e) {
+          if (e.name === 'AbortError') return; // user cancelled
+        }
+      }
+      // Fallback for desktop browsers
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a"); a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+
     // ── Export Modal ──
     var _exportCallback = null;
 
@@ -857,9 +874,7 @@
           var encData = await vaultEncrypt(JSON.stringify(getData(), null, 2), pw);
           var payload = { hint: hint || "", data: encData };
           var blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
-          var url  = URL.createObjectURL(blob);
-          var a    = document.createElement("a"); a.href=url; a.download="northbank-reserve-data.json";
-          a.click(); URL.revokeObjectURL(url); showToast("Vault sealed & exported");
+          await triggerDownload(blob, "northbank-reserve-data.json"); showToast("Vault sealed & exported");
         } catch(e) { showToast("Encryption failed", true); }
       };
       document.getElementById("exportModal").classList.add("open");
@@ -1064,9 +1079,7 @@
         folder.file("northbank-reserve-archives.html", htmlContent);
         folder.file("northbank-reserve-data.json", payload);
         var blob = await zip.generateAsync({ type:"blob", compression:"DEFLATE" });
-        var url  = URL.createObjectURL(blob);
-        var a    = document.createElement("a"); a.href=url; a.download="northbank-reserve-archives.zip";
-        a.click(); URL.revokeObjectURL(url); showToast("Archive sealed");
+        await triggerDownload(blob, "northbank-reserve-archives.zip"); showToast("Archive sealed");
       } catch(e) { showToast("Encryption failed", true); }
     }
 
@@ -1093,5 +1106,5 @@
     initLockScreen();
   </script>
 
- 
+
 </body></html>

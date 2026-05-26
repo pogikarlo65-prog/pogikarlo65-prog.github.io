@@ -24,53 +24,75 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Clear Gradle cache
+      - name: Free disk space
         run: |
-          rm -rf ~/.gradle
-          rm -rf android/.gradle || true
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          rm -rf ~/.gradle/caches/
+          rm -rf ~/.gradle/wrapper/
 
-      - name: Install dependencies
+      - name: Initialize npm
+        run: npm init -y
+
+      - name: Install Capacitor
         run: |
-          npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
-          npm install @capacitor/assets
+          npm install \
+          @capacitor/core@5 \
+          @capacitor/cli@5 \
+          @capacitor/android@5
 
       - name: Create Capacitor config
         run: |
-          cat > capacitor.config.json << EOF
-          {
+          echo '{
             "appId": "com.northbank.reserve",
             "appName": "Northbank Snezhnaya Archive",
             "webDir": "www"
-          }
-          EOF
+          }' > capacitor.config.json
 
-      - name: Prepare web files
+      - name: Copy website
         run: |
           mkdir -p www
           cp index.html www/index.html
 
-      - name: Generate app icons
-        run: |
-          npx capacitor-assets generate
+      - name: Add Android
+        run: npx cap add android || true
 
-      - name: Add Android platform
+      - name: Set app name
         run: |
-          npx cap add android || true
+          sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">Northbank Snezhnaya Archive<\/string>/' android/app/src/main/res/values/strings.xml
 
-      - name: Sync Capacitor
+      - name: Set app icon
         run: |
-          npx cap sync android
+          sudo apt-get install -y imagemagick
+          for size in 48 72 96 144 192; do
+            case $size in
+              48)  folder="mipmap-mdpi"  ;;
+              72)  folder="mipmap-hdpi"  ;;
+              96)  folder="mipmap-xhdpi" ;;
+              144) folder="mipmap-xxhdpi" ;;
+              192) folder="mipmap-xxxhdpi" ;;
+            esac
+            convert logo.png -resize ${size}x${size} android/app/src/main/res/${folder}/ic_launcher.png
+            convert logo.png -resize ${size}x${size} android/app/src/main/res/${folder}/ic_launcher_round.png
+          done
+
+      - name: Upgrade Gradle wrapper to 8.3
+        run: |
+          sed -i 's/gradle-8.2.1-all/gradle-8.3-all/g' android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Sync Android
+        run: npx cap sync android
 
       - name: Build APK
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2g"
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew clean
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --no-build-cache
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: northbank-snezhnaya-archive-apk
+          name: northbank-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk

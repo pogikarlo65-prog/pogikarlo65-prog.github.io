@@ -1,0 +1,7 @@
+- name: Install Capacitor
+        run: |
+          npm install \
+          @capacitor/core@5 \
+          @capacitor/cli@5 \
+          @capacitor/android@5 \
+          @capacitor/filesystem@5
